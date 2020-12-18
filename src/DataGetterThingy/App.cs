@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using CsvHelper;
-using DataGetterThingy.Models;
 using Microsoft.Extensions.Logging;
 
 namespace DataGetterThingy
@@ -53,31 +51,43 @@ namespace DataGetterThingy
             using (var writer = new StreamWriter(outputFileStream))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                foreach (InputCsvRow row in ParseCsv(inputFilePath))
+                var dataTable = ParseCsv(inputFilePath);
+
+                for (int i = 0; i < dataTable.Rows.Count; i++)
                 {
-                    if (string.IsNullOrEmpty(row.Uprn))
+                    DataRow row = dataTable.Rows[i];
+            
+                    if (string.IsNullOrEmpty(row[_appSettings.UrlColumn].ToString()))
                     {
-                        if (_appSettings.ShowUprnWarning) _logger.LogWarning($"ReferenceNumber {row.ReferenceNumber} does not have a UPRN.");
+                        if (_appSettings.ShowNoDataWarning) _logger.LogWarning($"Row {i} column {_appSettings.UrlColumn} has no data.");
                         skipped++;
                         continue;
                     }
 
                     try
                     {
-                        string data = await GetWebData(row);
-                        csv.WriteRecord(new OutputCsvRow { ReferenceNumber = row.ReferenceNumber, Uprn = row.Uprn, Data = data });
+                        string data = await GetWebData(row[_appSettings.UrlColumn].ToString());
+                        
+                        foreach (var o in row.ItemArray)
+                        {
+                            csv.WriteField(o);
+                        }
+                        csv.WriteField(data);
+
                         await csv.NextRecordAsync();
                         processed++;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, $"Error while processing UPRN {row.Uprn}");
+                        _logger.LogError(ex, $"Error while processing row {i}, data {row[_appSettings.UrlColumn]}");
                     }
 
-                    ShowProgression(row);
+                    if (i % 100 == 0)
+                    {
+                        _logger.LogInformation($"Processed {i} rows");
+                    }
                 }
             }
-            ClearProgression();
 
             sw.Stop();
 
@@ -86,31 +96,31 @@ namespace DataGetterThingy
 
 
 
-        private IEnumerable<InputCsvRow> ParseCsv(string inputFilePath)
+        private DataTable ParseCsv(string inputFilePath)
         {
-            var reader = new StreamReader(inputFilePath);
-            var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-            csv.Configuration.HasHeaderRecord = true;
-            return csv.GetRecords<InputCsvRow>();
+            var dataTable = new DataTable();
+
+            using (var reader = new StreamReader(inputFilePath))
+            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+            {
+                csv.Configuration.HasHeaderRecord = _appSettings.HasHeaderRecord;
+
+                using (var dr = new CsvDataReader(csv))
+                {
+                    dataTable.Load(dr);
+                }
+            }
+
+            return dataTable;
         }
 
-        private async Task<string> GetWebData(InputCsvRow row)
+        private async Task<string> GetWebData(string urlData)
         {
-            string url = string.Format(_appSettings.PreviousMeasuresUrlFormat, row.Uprn);
+            string url = string.Format(_appSettings.PreviousMeasuresUrlFormat, urlData);
 
             return await _httpClient.GetStringAsync(url);
         }
-
-        private void ShowProgression(InputCsvRow row)
-        {
-            Console.SetCursorPosition(0, Console.CursorTop);
-            Console.Write(row.ReferenceNumber);
-        }
-
-        private void ClearProgression()
-        {
-            Console.SetCursorPosition(0, Console.CursorTop);
-        }
+        
 
         private string GetOutputFilePath(string filePath)
         {

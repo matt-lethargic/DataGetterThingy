@@ -2,7 +2,7 @@
   "profiles": {
     "DataGetterThingy": {
       "commandName": "Project",
-      "commandLineArgs": "c:\\temp\\icf-data.csv"
+      "commandLineArgs": "c:\\temp\\data.csv"
     }
   }
 }

@@ -13,6 +13,8 @@ namespace DataGetterThingy
         }
 
         public string PreviousMeasuresUrlFormat => _configuration["PreviousMeasuresUrlFormat"];
-        public bool ShowUprnWarning => _configuration.GetValue<bool>("ShowUprnWarning");
+        public bool ShowNoDataWarning => _configuration.GetValue<bool>("ShowNoDataWarning");
+        public bool HasHeaderRecord => _configuration.GetValue<bool>("HasHeaderRecord", false);
+        public int UrlColumn => _configuration.GetValue<int>("UrlColumn", 0);
     }
 }
