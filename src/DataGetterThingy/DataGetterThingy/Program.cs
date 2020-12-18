@@ -62,9 +62,11 @@ namespace DataGetterThingy
 
             services.AddLogging();
 
+            Console.WriteLine("Dir = " + Environment.CurrentDirectory);
+
             // Build configuration
             Configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetParent(AppContext.BaseDirectory).FullName)
+                .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile("appsettings.json", false)
                 .Build();
 

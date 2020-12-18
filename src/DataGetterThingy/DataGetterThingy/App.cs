@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using CsvHelper;
 using DataGetterThingy.Models;
 using Microsoft.Extensions.Logging;
@@ -27,6 +29,9 @@ namespace DataGetterThingy
 
         public async Task Run(string inputFilePath)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             _logger.LogInformation("Running processing...");
 
             if (!File.Exists(inputFilePath))
@@ -72,8 +77,11 @@ namespace DataGetterThingy
                     ShowProgression(row);
                 }
             }
+            ClearProgression();
 
-            _logger.LogInformation($"Processing finished, skipped: {skipped}, processed: {processed}");
+            sw.Stop();
+
+            _logger.LogInformation($"Processing finished, skipped: {skipped}, processed: {processed}, took: {sw.Elapsed.TotalMinutes} mins or {sw.Elapsed.TotalSeconds} seconds");
         }
 
 
@@ -97,6 +105,11 @@ namespace DataGetterThingy
         {
             Console.SetCursorPosition(0, Console.CursorTop);
             Console.Write(row.ReferenceNumber);
+        }
+
+        private void ClearProgression()
+        {
+            Console.SetCursorPosition(0, Console.CursorTop);
         }
 
         private string GetOutputFilePath(string filePath)
