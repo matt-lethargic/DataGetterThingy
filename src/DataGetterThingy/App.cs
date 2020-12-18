@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
@@ -51,13 +52,14 @@ namespace DataGetterThingy
             using (var writer = new StreamWriter(outputFileStream))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                var dataTable = ParseCsv(inputFilePath);
+                var csvData = ParseCsv(inputFilePath);
+                int i = 0;
 
-                for (int i = 0; i < dataTable.Rows.Count; i++)
+                foreach (string[] row in csvData)
                 {
-                    DataRow row = dataTable.Rows[i];
-            
-                    if (string.IsNullOrEmpty(row[_appSettings.UrlColumn].ToString()))
+                    string rowData = row[_appSettings.UrlColumn];
+                    
+                    if (string.IsNullOrEmpty(rowData))
                     {
                         if (_appSettings.ShowNoDataWarning) _logger.LogWarning($"Row {i} column {_appSettings.UrlColumn} has no data.");
                         skipped++;
@@ -66,9 +68,9 @@ namespace DataGetterThingy
 
                     try
                     {
-                        string data = await GetWebData(row[_appSettings.UrlColumn].ToString());
+                        string data = await GetWebData(rowData);
                         
-                        foreach (var o in row.ItemArray)
+                        foreach (var o in row)
                         {
                             csv.WriteField(o);
                         }
@@ -86,6 +88,8 @@ namespace DataGetterThingy
                     {
                         _logger.LogInformation($"Processed {i} rows");
                     }
+
+                    i++;
                 }
             }
 
@@ -96,27 +100,37 @@ namespace DataGetterThingy
 
 
 
-        private DataTable ParseCsv(string inputFilePath)
+        private IEnumerable<string[]> ParseCsv(string inputFilePath)
         {
-            var dataTable = new DataTable();
-
             using (var reader = new StreamReader(inputFilePath))
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
                 csv.Configuration.HasHeaderRecord = _appSettings.HasHeaderRecord;
+                
+                if (_appSettings.HasHeaderRecord) csv.ReadHeader();
 
-                using (var dr = new CsvDataReader(csv))
+                while (csv.Read())
                 {
-                    dataTable.Load(dr);
+                    List<string> rowData = new List<string>();
+
+                    for (int i = 0; i < 100; i++)
+                    {
+                        if (!csv.TryGetField<string>(i, out string c))
+                        {
+                            break;
+                        }
+
+                        rowData.Add(c);
+                    }
+
+                    yield return rowData.ToArray();
                 }
             }
-
-            return dataTable;
         }
 
         private async Task<string> GetWebData(string urlData)
         {
-            string url = string.Format(_appSettings.PreviousMeasuresUrlFormat, urlData);
+            string url = string.Format(_appSettings.UrlFormat, urlData);
 
             return await _httpClient.GetStringAsync(url);
         }
