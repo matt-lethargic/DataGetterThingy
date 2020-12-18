@@ -1,4 +1,4 @@
-name: .NET
+name: Build and Test
 
 on:
   push:
@@ -24,9 +24,5 @@ jobs:
       run: dotnet restore src/DataGetterThingy/DataGetterThingy.csproj
     - name: Build
       run: dotnet build src/DataGetterThingy/DataGetterThingy.csproj --no-restore -c Release
-    - name: Publish Win x64
-      run: dotnet publish -r win-x64 -c Release -p:PublishSingleFile=true --self-contained true
-    - name: Publish OSX x64
-      run: dotnet publish -r osx-x64 -c Release -p:PublishSingleFile=true --self-contained true
-    - name: Publish Linux x64
-      run: dotnet publish -r linux-x64 -c Release -p:PublishSingleFile=true --self-contained true
+    - name: Test
+      run: dotnet test src/DataGetterThingy.sln --no-restore

@@ -7,7 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataGetterThingy", "DataGet
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Actions", "Actions", "{565DC028-068C-4628-B657-DC733486A6E1}"
 	ProjectSection(SolutionItems) = preProject
-		..\.github\workflows\dotnet.yml = ..\.github\workflows\dotnet.yml
+		..\.github\workflows\build-test.yml = ..\.github\workflows\build-test.yml
+		..\.github\workflows\release.yml = ..\.github\workflows\release.yml
 	EndProjectSection
 EndProject
 Global
