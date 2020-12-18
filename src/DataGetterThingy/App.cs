@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -106,8 +105,12 @@ namespace DataGetterThingy
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
                 csv.Configuration.HasHeaderRecord = _appSettings.HasHeaderRecord;
-                
-                if (_appSettings.HasHeaderRecord) csv.ReadHeader();
+
+                if (_appSettings.HasHeaderRecord)
+                {
+                    csv.Read();
+                    csv.ReadHeader();
+                }
 
                 while (csv.Read())
                 {
