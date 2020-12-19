@@ -16,5 +16,7 @@ namespace DataGetterThingy
         public bool ShowNoDataWarning => _configuration.GetValue<bool>("ShowNoDataWarning");
         public bool HasHeaderRecord => _configuration.GetValue<bool>("HasHeaderRecord", false);
         public int UrlColumn => _configuration.GetValue<int>("UrlColumn", 0);
+        public string AuthenticationScheme => _configuration["AuthenticationScheme"];
+        public string AuthenticationValue => _configuration["AuthenticationValue"];
     }
 }

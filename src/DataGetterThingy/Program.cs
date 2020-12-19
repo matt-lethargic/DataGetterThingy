@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using DataGetterThingy.Logging;
@@ -72,7 +73,11 @@ namespace DataGetterThingy
 
             services.AddSingleton<IConfiguration>(Configuration);
 
-            services.AddHttpClient();
+            // services.AddHttpClient(nameof(App), c =>
+            // {
+            //     if ( != null)
+            //         c.DefaultRequestHeaders.Add("Authorization", bearerToken);
+            // });
 
             // Add app
             services.AddSingleton<AppSettings>();

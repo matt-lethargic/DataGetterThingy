@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using CsvHelper;
 using Microsoft.Extensions.Logging;
@@ -23,6 +24,13 @@ namespace DataGetterThingy
             if (clientFactory == null) throw new ArgumentNullException(nameof(clientFactory));
 
             _httpClient = clientFactory.CreateClient(nameof(App));
+
+            if (!string.IsNullOrEmpty(_appSettings.AuthenticationScheme) &&
+                !string.IsNullOrEmpty(_appSettings.AuthenticationValue))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue(_appSettings.AuthenticationScheme, _appSettings.AuthenticationValue);
+            }
         }
 
         public async Task Run(string inputFilePath)
