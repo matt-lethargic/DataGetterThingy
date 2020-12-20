@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace DataGetterThingy
 {
-    internal class AppSettings
+    public class AppSettings
     {
         private readonly IConfiguration _configuration;
 

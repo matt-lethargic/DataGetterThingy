@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -7,6 +6,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using CsvHelper;
+using DataGetterThingy.Data;
+using DataGetterThingy.Inputs;
 using Microsoft.Extensions.Logging;
 
 namespace DataGetterThingy
@@ -15,22 +16,15 @@ namespace DataGetterThingy
     {
         private readonly ILogger<App> _logger;
         private readonly AppSettings _appSettings;
-        private readonly HttpClient _httpClient;
+        private readonly IInputParser _parser;
+        private readonly IDataGetter _dataGetter;
 
-        public App(ILogger<App> logger, AppSettings appSettings, IHttpClientFactory clientFactory)
+        public App(ILogger<App> logger, AppSettings appSettings, IInputParser parser, IDataGetter dataGetter)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
-            if (clientFactory == null) throw new ArgumentNullException(nameof(clientFactory));
-
-            _httpClient = clientFactory.CreateClient(nameof(App));
-
-            if (!string.IsNullOrEmpty(_appSettings.AuthenticationScheme) &&
-                !string.IsNullOrEmpty(_appSettings.AuthenticationValue))
-            {
-                _httpClient.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue(_appSettings.AuthenticationScheme, _appSettings.AuthenticationValue);
-            }
+            _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+            _dataGetter = dataGetter ?? throw new ArgumentNullException(nameof(dataGetter));
         }
 
         public async Task Run(string inputFilePath)
@@ -40,11 +34,6 @@ namespace DataGetterThingy
 
             _logger.LogInformation("Running processing...");
 
-            if (!File.Exists(inputFilePath))
-            {
-                throw new FileNotFoundException("File does not exist.", inputFilePath);
-            }
-            
             string outputFilePath = GetOutputFilePath(inputFilePath);
 
             _logger.LogInformation($"Output file: {outputFilePath}");
@@ -59,7 +48,7 @@ namespace DataGetterThingy
             using (var writer = new StreamWriter(outputFileStream))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
-                var csvData = ParseCsv(inputFilePath);
+                var csvData = _parser.Parse(inputFilePath);
                 int i = 0;
 
                 foreach (string[] row in csvData)
@@ -75,7 +64,7 @@ namespace DataGetterThingy
 
                     try
                     {
-                        string data = await GetWebData(rowData);
+                        string data = await _dataGetter.GetData(rowData);
                         
                         foreach (var o in row)
                         {
@@ -106,47 +95,6 @@ namespace DataGetterThingy
         }
 
 
-
-        private IEnumerable<string[]> ParseCsv(string inputFilePath)
-        {
-            using (var reader = new StreamReader(inputFilePath))
-            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-            {
-                csv.Configuration.HasHeaderRecord = _appSettings.HasHeaderRecord;
-
-                if (_appSettings.HasHeaderRecord)
-                {
-                    csv.Read();
-                    csv.ReadHeader();
-                }
-
-                while (csv.Read())
-                {
-                    List<string> rowData = new List<string>();
-
-                    for (int i = 0; i < 100; i++)
-                    {
-                        if (!csv.TryGetField<string>(i, out string c))
-                        {
-                            break;
-                        }
-
-                        rowData.Add(c);
-                    }
-
-                    yield return rowData.ToArray();
-                }
-            }
-        }
-
-        private async Task<string> GetWebData(string urlData)
-        {
-            string url = string.Format(_appSettings.UrlFormat, urlData);
-
-            return await _httpClient.GetStringAsync(url);
-        }
-        
-
         private string GetOutputFilePath(string filePath)
         {
             string fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -154,5 +102,7 @@ namespace DataGetterThingy
             string newFileName = $"{fileName}-updated.csv";
             return Path.Combine(directory, newFileName);
         }
+
+
     }
 }

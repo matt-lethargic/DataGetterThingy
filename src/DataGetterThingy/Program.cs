@@ -1,7 +1,7 @@
-﻿
-using System;
-using System.IO;
+﻿using System;
 using System.Threading.Tasks;
+using DataGetterThingy.Data;
+using DataGetterThingy.Inputs;
 using DataGetterThingy.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,20 +62,22 @@ namespace DataGetterThingy
             }));
 
             services.AddLogging();
-
-            Console.WriteLine("Dir = " + Environment.CurrentDirectory);
-
+            
             // Build configuration
             Configuration = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile("appsettings.json", false)
                 .Build();
 
-            services.AddSingleton<IConfiguration>(Configuration);
+            services.AddSingleton(Configuration);
 
             services.AddHttpClient();
 
             // Add app
+
+            services.AddSingleton<IInputParser, CsvParser>();
+            services.AddSingleton<IDataGetter, HttpDataGetter>();
+
             services.AddSingleton<AppSettings>();
             services.AddTransient<App>();
         }
