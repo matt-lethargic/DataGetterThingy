@@ -73,11 +73,7 @@ namespace DataGetterThingy
 
             services.AddSingleton<IConfiguration>(Configuration);
 
-            // services.AddHttpClient(nameof(App), c =>
-            // {
-            //     if ( != null)
-            //         c.DefaultRequestHeaders.Add("Authorization", bearerToken);
-            // });
+            services.AddHttpClient();
 
             // Add app
             services.AddSingleton<AppSettings>();
